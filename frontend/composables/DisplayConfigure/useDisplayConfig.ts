@@ -168,6 +168,11 @@ export const useDisplayConfigService = () => {
     }
   }
 
+    const getDisplayConfigIds = () => {
+    return displayConfigs.value.map(cfg => cfg.id ?? (cfg as any)._id);
+  }
+
+
   return {
     displayConfigs,
     loading,
@@ -180,6 +185,7 @@ export const useDisplayConfigService = () => {
     fetchDisplayConfig,
     createDisplayConfig,
     loadDisplayConfigDetails,
-    updateDisplayConfig
+    updateDisplayConfig,
+    getDisplayConfigIds
   }
 }

@@ -4,10 +4,12 @@ import axios from 'axios'
 
 const API_URL = 'http://localhost:3030'
 
+
+
 interface LoginResponse {
   accessToken: string
   authentication: { strategy: string }
-  user: { id: string; email: string; roles?: string[] }
+  user: { id: string;username: string; email: string; roles?: string[] }
 }
 
 const user = ref<LoginResponse['user'] | null>(null)

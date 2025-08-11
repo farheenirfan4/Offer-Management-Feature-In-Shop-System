@@ -44,13 +44,12 @@
 
     <!-- Offers Table -->
     <v-data-table
-      v-if="offers.length"
+      v-if="offersWithStatus.length"
       :headers="headers"
-      :items="offers"
+      :items="offersWithStatus"
       :items-per-page="5"
       class="elevation-1 custom-header"
-      fixed-header
-      height="400"
+      
     >
 
     <template #item.title="{ item }">
@@ -201,10 +200,22 @@
 
       <v-row >
         <v-col cols="6">
-          <v-text-field label="Personas Id" type="number" v-model="newOffer.personasId" outlined ></v-text-field>
+          <v-select
+  :items="personaIds"
+  v-model="newOffer.personasId"
+  label="Select Persona"
+  outlined
+  :return-object="false" 
+  @change="onPersonaChange"
+/>
         </v-col>
         <v-col cols="6">
-          <v-text-field label="Display Configure Id" v-model="newOffer.displayConfigureId" outlined></v-text-field>
+         <v-select
+  :items="displayConfigIds"
+  v-model="newOffer.displayConfigureId"
+  label="Select Display Config"
+  outlined
+/>
         </v-col>
       </v-row>
 
@@ -213,6 +224,7 @@
     <v-text-field
       label="Start Date UTC"
       type="datetime-local"
+      :min="minDateTime"
       v-model="newOffer.startDateUTC"
       outlined
     ></v-text-field>
@@ -222,6 +234,7 @@
       label="End Date UTC"
       type="datetime-local"
       v-model="newOffer.endDateUTC"
+      :min="newOffer.startDateUTC || minDateTime"
       outlined
     ></v-text-field>
   </v-col>
@@ -253,8 +266,12 @@
 <v-dialog v-model="isUserDialogOpen" max-width="800">
   <v-card>
     <v-card-title class="text-h5">
-      Users for Persona ID: {{ selectedPersonaId }}
-    </v-card-title>
+  Users for Persona ID: {{ selectedPersonaId }}
+</v-card-title>
+<v-card-subtitle v-if="!userDialogLoading" class="mb-2" style="color: black;">
+  Total Users: {{ filteredUsers.length }}
+</v-card-subtitle>
+    
     <v-card-text>
       <v-alert v-if="userDialogLoading" type="info" variant="tonal">
         Loading users...
@@ -288,15 +305,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref,onMounted } from "vue";
+import { computed, ref, onMounted, onUnmounted  } from "vue";
 import { useOffers } from "../../composables/Offers/useOffer";
 import { Offer } from "../../schemas/offerSchema";
 import { fetchFilteredUsers, users as filteredUsers } from "../../composables/PlayerData/usePlayerServices"; 
+import { formatForDateTimeLocal, toUTCISOString } from "../utils/offerUtils";
+import { parseProductName, stringifyProductName } from "../utils/offerUtils";
+import { useAuth } from '../../composables/Authentication/useAuth';
+import { usePersonaService } from '../../composables/Persona/usePersonaService'
+import { useDisplayConfigService } from '../../composables/DisplayConfigure/useDisplayConfig'
+import { getOfferStatus } from '../../src/utils/offerUtils';
+
+const { fetchDisplayConfig, getDisplayConfigIds } = useDisplayConfigService()
 // assuming fetchFilteredUsers is exported from your Persona composable
 
 const isUserDialogOpen = ref(false);
 const selectedPersonaId = ref<number | null>(null);
 const userDialogLoading = ref(false);
+
+const { user } = useAuth();
 
 const items = ref([])
 
@@ -346,15 +373,23 @@ async function openUserDialog(personaId: number) {
   userDialogLoading.value = true;
   
   try {
-    await fetchFilteredUsers(personaId); // your function from earlier
+    await fetchFilteredUsers(personaId); 
   } finally {
     userDialogLoading.value = false;
   }
 }
 
+function onPersonaChange(value: any) {
+  console.log('Selected Persona ID changed to:', value)
+}
 
 
-
+const now = new Date();
+const minDateTime = ref(
+  new Date(now.getTime() - now.getTimezoneOffset() * 60000) // adjust to local time
+    .toISOString()
+    .slice(0, 16) // "YYYY-MM-DDTHH:mm"
+);
 
 // Delete offer action
 async function deleteOffer(item: any) {
@@ -364,26 +399,18 @@ async function deleteOffer(item: any) {
   }
 }
 
-// ... (other code)
+
+
+const displayConfigIds = ref<number[]>([])
+const selectedId = ref('')
 
 const offersWithStatus = computed(() => {
+  // Use the offers ref to get the current list of offers
   return offers.value.map(offer => {
-    const now = new Date();
-    const startDate = new Date(offer.startDateUTC);
-    const endDate = new Date(offer.endDateUTC);
-
-    let status = '';
-    if (now < startDate) {
-      status = 'upcoming';
-    } else if (now > endDate) {
-      status = 'expired';
-    } else {
-      status = 'active';
-    }
-
     return {
       ...offer,
-      status // Add the new status property to the offer object
+      // Use the imported function to get the correct status
+      status: getOfferStatus(offer)
     };
   });
 });
@@ -413,37 +440,19 @@ async function saveOffer() {
       newOffer.value.repeatDetails = []
     }
 
-    const offerToSave = {
+   const offerToSave = {
       ...newOffer.value,
-      createdBy: 'admin',
-      updatedBy: 'admin'
-    }
-
-    // Convert promotionalTags string to array
-    if (typeof offerToSave.promotionalTags === 'string') {
-      offerToSave.promotionalTags = offerToSave.promotionalTags
-        .split(',')
-        .map(tag => tag.trim())
-        .filter(Boolean)
-    }
-
-    // Convert numbers
-    offerToSave.personasId = +(offerToSave.personasId || 0)
-
-    // Convert dates to ISO
-    if (offerToSave.startDateUTC) {
-      offerToSave.startDateUTC = new Date(offerToSave.startDateUTC).toISOString()
-    }
-    if (offerToSave.endDateUTC) {
-      offerToSave.endDateUTC = new Date(offerToSave.endDateUTC).toISOString()
-    }
-
-    // Convert product to JSON string
-    if (offerToSave.product) {
-      offerToSave.product = JSON.stringify({ name: offerToSave.product })
-    } else {
-      offerToSave.product = JSON.stringify({})
-    }
+      createdBy: user.value?.username || 'unknown',
+      updatedBy: user.value?.username || 'unknown',
+      promotionalTags: typeof newOffer.value.promotionalTags === 'string'
+        ? newOffer.value.promotionalTags.split(',').map(t => t.trim()).filter(Boolean)
+        : newOffer.value.promotionalTags,
+      personasId: +(newOffer.value.personasId || 0),
+      displayConfigureId: +(newOffer.value.displayConfigureId || 0),
+      startDateUTC: toUTCISOString(newOffer.value.startDateUTC),
+      endDateUTC: toUTCISOString(newOffer.value.endDateUTC),
+      product: stringifyProductName(newOffer.value.product as string)
+    };
 
     if (editModel.value && editingOfferId.value) {
       // 🔹 Create a new object for the update payload
@@ -451,15 +460,19 @@ async function saveOffer() {
 
       // ❗ Remove the id and status fields from the payload
       delete dataToUpdate.id;
-      delete (dataToUpdate as any).status; // Cast to 'any' to avoid TypeScript errors
+      delete (dataToUpdate as any).status;
 
       await updateOffer(editingOfferId.value, dataToUpdate as Offer);
+      
+      alert("Offer updated successfully!");
     } else {
       // 🔹 Add offer
       await addOffer(offerToSave)
     }
 
     await fetchOffers();
+
+    console.log('Saving offer payload:', offerToSave);
 
     // Reset form
     isAddDialogOpen.value = false
@@ -470,6 +483,8 @@ async function saveOffer() {
     console.error("Failed to save offer:", err)
   }
 }
+
+
 
 
 function getStatusColor(status: string): string {
@@ -488,15 +503,50 @@ function getStatusColor(status: string): string {
 function editOffer(item: Offer & { _id?: string }) {
   newOffer.value = {
     ...item,
-    // Convert promotionalTags array back to a comma-separated string for the text field
-    promotionalTags: Array.isArray(item.promotionalTags) ? item.promotionalTags.join(", ") : item.promotionalTags || '',
-    // Convert the product JSON string back to a simple string
-    product: typeof item.product === "string" ? JSON.parse(item.product).name || '' : item.product,
+    promotionalTags: Array.isArray(item.promotionalTags)
+      ? item.promotionalTags.join(", ")
+      : item.promotionalTags || '',
+    product: parseProductName(item.product), // ✅ Always just the name
+    startDateUTC: formatForDateTimeLocal(item.startDateUTC),
+    endDateUTC: formatForDateTimeLocal(item.endDateUTC),
   };
   editingOfferId.value = item._id || item.id || null;
   editModel.value = true;
   isAddDialogOpen.value = true;
 }
+
+
+const { getPersonaIds, fetchPersonasConfig } = usePersonaService()
+const personaIds = ref<string[] | number[]>([])
+
+onMounted(async () => {
+  await fetchPersonasConfig()
+  personaIds.value = getPersonaIds()
+  await fetchDisplayConfig()
+  displayConfigIds.value = getDisplayConfigIds()
+})
+
+let updateInterval: number | NodeJS.Timeout | undefined;
+
+onMounted(async () => {
+  // Fetch initial offers
+  await fetchOffers();
+
+  // Set up a timer to update the offers' status every minute
+  updateInterval = setInterval(() => {
+    // A simple way to trigger reactivity is to re-assign the offers list
+    offers.value = [...offers.value];
+  }, 60000); // 60000 milliseconds = 1 minute
+});
+
+onUnmounted(() => {
+  // Clear the timer to prevent memory leaks when the component is destroyed
+  if (updateInterval) {
+    clearInterval(updateInterval);
+  }
+});
+
+
 
 </script>
 
@@ -509,7 +559,7 @@ function editOffer(item: Offer & { _id?: string }) {
 .square-btn {
   min-width: 40px;
   height: 40px;
-  border-radius: 20; /* makes it square */
+  border-radius: 20;
   padding: 12px;
 }
 </style>

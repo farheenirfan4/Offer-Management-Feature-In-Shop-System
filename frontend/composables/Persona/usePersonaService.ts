@@ -183,6 +183,14 @@ export function usePersonaService() {
   }
 }
 
+const getPersonaIds = () => {
+  // Ensures we only return numbers/strings, no undefined/null
+  return personasConfig.value
+    .map(p => p.id ?? (p as any)._id) // Support both `id` and `_id`
+    .filter((id): id is number => id !== undefined && id !== null);
+};
+
+
   return {
     personasConfig,
     loading,
@@ -198,6 +206,7 @@ export function usePersonaService() {
     maxDeposits,
     minDeposits,
     loadPersonaDetails,
-    updatePersona
+    updatePersona,
+    getPersonaIds 
   }
 }
