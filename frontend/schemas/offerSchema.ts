@@ -10,7 +10,7 @@ export interface Offer {
   promotionalTags: string | string[] ;
   product: string
   personasId: number ;
-  displayConfigureId: string
+  displayConfigureId: number
   repeatPatterns: "none" | "daily" | "weekly" | "monthly"
   repeatDetails: string[]
   //createdBy: string
@@ -45,7 +45,7 @@ export const offersSchema = {
     },
     product: { type: "string", minLength: 1 },
     personasId: { type: "number", minimum: 1 },
-    displayConfigureId: { type: "string", minLength: 1 },
+    displayConfigureId: { type: "number", minimum: 1 },
     repeatPatterns: { type: "string", enum: ["none", "daily", "weekly", "monthly"] },
     repeatDetails: {
       type: "array",

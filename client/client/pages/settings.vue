@@ -1,4 +1,0 @@
-<template>
-  <SettingForm></SettingForm>
-
-</template>

@@ -37,7 +37,7 @@ export const offersSchema = {
     },
 
     personasId: { type: 'number', minimum: 1 },
-    displayConfigureId: { type: 'string', minLength: 1 },
+    displayConfigureId: { type: 'number', minimum: 1 },
     repeatPatterns: { type: 'string', enum: ['none', 'daily', 'weekly', 'monthly'] },
     repeatDetails: {
   type: 'array',
