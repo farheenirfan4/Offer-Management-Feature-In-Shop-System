@@ -19,6 +19,8 @@ import { userPath, userMethods } from './users.shared'
 import { restrictByRole } from '../../hooks/Roles/restrictByRole';
 import { preventSelfRoleChange } from '../../hooks/Roles/preventSelfRoleChange';
 import { Forbidden } from '@feathersjs/errors'
+import { changelogHook } from '../../hooks/Changelog/changelogHooks'
+
 
 export * from './users.class'
 export * from './users.schema'
@@ -91,6 +93,10 @@ export const user = (app: Application) => {
       ]
     },
     after: {
+      create: [changelogHook],
+      patch: [changelogHook],
+      update: [changelogHook],
+      remove: [changelogHook],
       all: []
     },
     error: {

@@ -206,7 +206,7 @@
   label="Select Persona"
   outlined
   :return-object="false" 
-  @change="onPersonaChange"
+  
 />
         </v-col>
         <v-col cols="6">
@@ -286,7 +286,6 @@
         :headers="[
           { title: 'User ID', key: 'id' },
           { title: 'Name', key: 'username' },
-          
         ]"
         :items="filteredUsers"
         :items-per-page="5"
@@ -324,8 +323,6 @@ const selectedPersonaId = ref<number | null>(null);
 const userDialogLoading = ref(false);
 
 const { user } = useAuth();
-
-const items = ref([])
 
 
 const { offers, loading, error, fetchOffers, deleteOffer: removeOffer,addOffer,updateOffer } = useOffers();
@@ -379,10 +376,6 @@ async function openUserDialog(personaId: number) {
   }
 }
 
-function onPersonaChange(value: any) {
-  console.log('Selected Persona ID changed to:', value)
-}
-
 
 const now = new Date();
 const minDateTime = ref(
@@ -399,10 +392,7 @@ async function deleteOffer(item: any) {
   }
 }
 
-
-
 const displayConfigIds = ref<number[]>([])
-const selectedId = ref('')
 
 const offersWithStatus = computed(() => {
   // Use the offers ref to get the current list of offers
@@ -436,7 +426,7 @@ onMounted(() => {
 
 async function saveOffer() {
   try {
-    if (newOffer.value.repeatPatterns === 'none') {
+    if (newOffer.value.repeatPatterns === 'none' ) {
       newOffer.value.repeatDetails = []
     }
 
@@ -468,11 +458,10 @@ async function saveOffer() {
     } else {
       // 🔹 Add offer
       await addOffer(offerToSave)
+      alert("Offer added successfully!");
     }
 
     await fetchOffers();
-
-    console.log('Saving offer payload:', offerToSave);
 
     // Reset form
     isAddDialogOpen.value = false
@@ -536,7 +525,7 @@ onMounted(async () => {
   updateInterval = setInterval(() => {
     // A simple way to trigger reactivity is to re-assign the offers list
     offers.value = [...offers.value];
-  }, 60000); // 60000 milliseconds = 1 minute
+  }, 50000); // 60000 milliseconds = 1 minute
 });
 
 onUnmounted(() => {

@@ -15,6 +15,7 @@ import {
   playersDataPatchResolver,
   playersDataQueryResolver
 } from './players-data.schema'
+import { changelogHook } from '../../hooks/Changelog/changelogHooks'
 
 import type { Application } from '../../declarations'
 import { PlayersDataService, getOptions } from './players-data.class'
@@ -74,6 +75,10 @@ export const playersData = (app: Application) => {
       remove: []
     },
     after: {
+      create: [changelogHook],
+      patch: [changelogHook],
+      update: [changelogHook],
+      remove: [changelogHook],
       all: []
     },
     error: {

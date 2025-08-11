@@ -95,21 +95,6 @@ const newProject = {
         </VCol>
       </VRow>
     </VCol>
-
-    <VCol
-      cols="12"
-      md="4"
-    >
-      <AnalyticsSalesByCountries />
-    </VCol>
-
-    <VCol
-      cols="12"
-      md="8"
-    >
-      <AnalyticsDepositWithdraw />
-    </VCol>
-
     <VCol cols="12">
       <AnalyticsUserTable />
     </VCol>

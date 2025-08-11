@@ -1,5 +1,6 @@
 // For more information about this file see https://dove.feathersjs.com/guides/cli/service.html
 import { authenticate } from '@feathersjs/authentication'
+import { changelogHook } from '../../hooks/Changelog/changelogHooks'
 
 import { hooks as schemaHooks } from '@feathersjs/schema'
 
@@ -51,45 +52,20 @@ export const personasConfig = (app: Application) => {
       create: [
         schemaHooks.validateData(personasConfigDataValidator),
         schemaHooks.resolveData(personasConfigDataResolver),
-        /*async context => {
-  const now = new Date().toISOString()
-
-  if (Array.isArray(context.data)) {
-    context.data = context.data.map(entry => ({
-      ...entry,
-      createdAt: now,
-      updatedAt: now
-    }))
-  } else if (context.data) {
-    context.data.createdAt = now
-    context.data.updatedAt = now
-  }
-
-  return context
-}*/
+        
       ],
       patch: [
         schemaHooks.validateData(personasConfigPatchValidator),
         schemaHooks.resolveData(personasConfigPatchResolver),
-        /*async context => {
-  const now = new Date().toISOString()
-
-  if (Array.isArray(context.data)) {
-    context.data = context.data.map(entry => ({
-      ...entry,
-      updatedAt: now,
-     
-    }))
-  } else if (context.data) {
-    context.data.updatedAt = now
-  }
-
-  return context
-}*/
+  
       ],
       remove: []
     },
     after: {
+      create: [changelogHook],
+      patch: [changelogHook],
+      update: [changelogHook],
+      remove: [changelogHook],
       all: [],
     },
     error: {

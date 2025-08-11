@@ -75,9 +75,14 @@ onMounted(async () => {
 <template>
   <VContainer>
     <VCard>
-      <VCardTitle class="d-flex justify-space-between align-center">
-        <span>Display Configuration</span>
-        <VBtn icon="ri-add-box-line" color="primary" @click="openCreateDialog" />
+      <VCardTitle class="d-flex justify-space-between align-center mb-4 ms-2">
+        <span class="text-h4 font-weight-bold">Display Configuration</span>
+        <VBtn
+  icon="ri-add-large-fill"
+  color="primary"
+  class="square-btn"
+  @click="openCreateDialog"
+/>
       </VCardTitle>
 
       <VCardText>
@@ -108,7 +113,7 @@ onMounted(async () => {
               <td>{{ item.priority }}</td>
               <td>{{ new Date(item.createdAt).toLocaleString() }}</td>
               <td>
-                <VBtn small icon="ri-edit-line" @click="openEditDialog(item)" />
+                <VBtn small icon="ri-edit-line" variant="flat" color="purple" @click="openEditDialog(item)" />
               </td>
             </tr>
           </tbody>
@@ -121,10 +126,12 @@ onMounted(async () => {
       <VCard>
         <VCardTitle>{{ isEditing ? 'Edit Display Config' : 'Create New Display Config' }}</VCardTitle>
         <VCardText>
-          <VTextField label="Display Section" v-model="formDisplayConfig.displaySection" outlined />
-          <VTextField label="Height" v-model="formDisplayConfig.height" outlined />
-          <VTextField label="Width" v-model="formDisplayConfig.width" outlined />
-          <VTextField label="Priority" v-model="formDisplayConfig.priority" outlined />
+          <div class="d-flex flex-column gap-4">
+  <VTextField label="Display Section" v-model="formDisplayConfig.displaySection" outlined />
+  <VTextField label="Height" v-model="formDisplayConfig.height" outlined />
+  <VTextField label="Width" v-model="formDisplayConfig.width" outlined />
+  <VTextField label="Priority" v-model="formDisplayConfig.priority" outlined />
+</div>
         </VCardText>
 
         <VCardActions>
@@ -138,3 +145,15 @@ onMounted(async () => {
     </VDialog>
   </VContainer>
 </template>
+<style scoped>
+.square-btn {
+  border-radius: 8px; /* Slightly rounded corners, not fully round */
+  width: 48px;        /* Square size */
+  height: 48px;       /* Square size */
+  min-width: 36px;    /* Ensure Vuetify doesn't override width */
+  min-height: 36px;   /* Ensure Vuetify doesn't override height */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+</style>

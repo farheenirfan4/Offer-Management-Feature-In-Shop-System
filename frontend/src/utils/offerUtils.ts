@@ -3,7 +3,7 @@ import { Offer } from '../../schemas/offerSchema';
 
 
 
-export type OfferStatus = 'upcoming' | 'active' | 'expired';
+export type OfferStatus = 'upcoming' | 'active' | 'expired' | 'inactive';
 export function formatForDateTimeLocal(isoString?: string) {
   if (!isoString) return '';
   const date = new Date(isoString);
@@ -35,65 +35,55 @@ export function stringifyProductName(name: string) {
 }
 
 export function getOfferStatus(offer: Offer, now: Date = new Date()): OfferStatus {
-  const startUTC = new Date(offer.startDateUTC);
-  const endUTC = new Date(offer.endDateUTC);
+  const campaignStart = new Date(offer.startDateUTC); // overall offer start date
+  const campaignEnd = new Date(offer.endDateUTC);     // overall offer end date
 
-  // 1. Check for expired status based on overall date range
-  if (now > endUTC) {
-    return 'expired';
-  }
+  // 1. Expired if campaign is completely over
+  if (now > campaignEnd) return 'expired';
 
-  // 2. Check for upcoming status if the offer hasn't started yet
-  if (now < startUTC) {
-    return 'upcoming';
-  }
+  // 2. Upcoming if campaign hasn't started yet
+  if (now < campaignStart) return 'upcoming';
 
-  // 3. The offer is within its overall date range. Now handle repeating patterns.
+  // 3. Extract local time components
+  const nowDay = now.getDay();   // 0 = Sunday
+  const nowMonth = now.getMonth(); // 0 = Jan
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
-  // Get local time components for the current time
-  const nowDayOfWeek = now.getDay(); // 0 for Sunday, 6 for Saturday
-  const nowMonth = now.getMonth();   // 0 for January, 11 for December
-  const nowTimeInMinutes = now.getHours() * 60 + now.getMinutes();
+  // Extract hours/minutes from offer start/end times (local)
+  const startTime = new Date(offer.startDateUTC);
+  const endTime = new Date(offer.endDateUTC);
+  const startMinutes = startTime.getHours() * 60 + startTime.getMinutes();
+  const endMinutes = endTime.getHours() * 60 + endTime.getMinutes();
 
-  // Create a Date object for the offer's start time in the local timezone
-  // This is the key change to ensure local time comparison
-  const offerLocalStartTime = new Date(offer.startDateUTC); 
-  const offerLocalEndTime = new Date(offer.endDateUTC);
-
-  const offerStartTimeInMinutes = offerLocalStartTime.getHours() * 60 + offerLocalStartTime.getMinutes();
-  const offerEndTimeInMinutes = offerLocalEndTime.getHours() * 60 + offerLocalEndTime.getMinutes();
-  
-  const isTimeActive = nowTimeInMinutes >= offerStartTimeInMinutes && nowTimeInMinutes <= offerEndTimeInMinutes;
+  const isTimeActive = nowMinutes >= startMinutes && nowMinutes <= endMinutes;
   const repeatDetailsArray = Array.isArray(offer.repeatDetails) ? offer.repeatDetails : [];
 
   switch (offer.repeatPatterns) {
     case 'none':
-      return 'active'; 
+      return isTimeActive ? 'active' : 'inactive'; // inactive if within campaign but outside time
 
     case 'daily':
-      return isTimeActive ? 'active' : 'upcoming';
+      // No 'upcoming' here as per your requirement
+      return isTimeActive ? 'active' : 'inactive';
 
     case 'weekly':
       const daysOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-      const repeatDaysNumbers = repeatDetailsArray.map((day: string) => daysOfWeek.indexOf(day.toLowerCase()));
-
-      if (repeatDaysNumbers.includes(nowDayOfWeek)) {
-        return isTimeActive ? 'active' : 'upcoming';
-      } else {
-        return 'upcoming';
+      const repeatDays = repeatDetailsArray.map(d => daysOfWeek.indexOf(d.toLowerCase()));
+      if (repeatDays.includes(nowDay)) {
+        return isTimeActive ? 'active' : 'inactive';
       }
-      
+      return 'upcoming';
+
     case 'monthly':
       const monthsOfYear = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
-      const repeatMonthsNumbers = repeatDetailsArray.map((month: string) => monthsOfYear.indexOf(month.toLowerCase()));
-
-      if (repeatMonthsNumbers.includes(nowMonth)) {
-        return isTimeActive ? 'active' : 'upcoming';
-      } else {
-        return 'upcoming';
+      const repeatMonths = repeatDetailsArray.map(m => monthsOfYear.indexOf(m.toLowerCase()));
+      if (repeatMonths.includes(nowMonth)) {
+        return isTimeActive ? 'active' : 'inactive';
       }
-  }
+      return 'upcoming';
 
-  return 'upcoming';
+    default:
+      return 'inactive';
+  }
 }
 
