@@ -27,7 +27,7 @@ import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
     }"
   />
 
-  <VerticalNavLink
+  <!--<VerticalNavLink
     :item="{
       title: 'Account Settings',
       icon: 'ri-user-settings-line',
@@ -35,20 +35,14 @@ import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
     }"
   />
 
-  <!--  ><VerticalNavLink
+    ><VerticalNavLink
     :item="{
       title: 'Login',
       icon: 'ri-login-box-line',
       to: '/login',
     }"
   />-->
-  <VerticalNavLink
-    :item="{
-      title: 'Persona',
-      icon: 'ri-information-line',
-      to: '/persona',
-    }"
-  />
+
   <VerticalNavLink
     :item="{
       title: 'Offers',
@@ -56,6 +50,16 @@ import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
       to: '/offers',
     }"
   />
+
+  
+  <VerticalNavLink
+    :item="{
+      title: 'Persona',
+      icon: 'ri-information-line',
+      to: '/persona',
+    }"
+  />
+  
 
 
   <!-- 👉 User Interface -->

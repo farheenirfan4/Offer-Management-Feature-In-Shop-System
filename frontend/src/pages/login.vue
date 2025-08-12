@@ -64,8 +64,7 @@ const handleLogin = async () => {
     console.log('Logged in user:', loggedUser) // This will now show
     router.push('/dashboard')
     
-    // Redirect to dashboard or home
-    //window.location.href = '/dashboard'
+   
   } catch {
     // Error already handled in composable
   }
@@ -87,13 +86,9 @@ const isPasswordVisible = ref(false)
           to="/"
           class="d-flex align-center gap-3"
         >
-          <!-- eslint-disable vue/no-v-html -->
-          <div
-            class="d-flex"
-            v-html="logo"
-          />
+          
           <h2 class="font-weight-medium text-2xl text-uppercase">
-            Materio
+            Shop System
           </h2>
         </RouterLink>
       </VCardItem>
@@ -103,7 +98,7 @@ const isPasswordVisible = ref(false)
           Welcome to CMS! 👋🏻
         </h4>
         <p class="mb-0">
-          Please sign-in to your account and start the adventure
+          Please sign-in to your account
         </p>
       </VCardText>
 
@@ -162,15 +157,8 @@ const isPasswordVisible = ref(false)
               cols="12"
               class="text-center text-base"
             >
-              <span>New on our platform?</span>
-              <RouterLink
-                class="text-primary ms-2"
-                to="/register"
-              >
-                Create an account
-              </RouterLink>
                <ul v-if="errors.length" class="error-list">
-      <li v-for="(err, index) in errors" :key="index">
+      <li class="color-red" v-for="(err, index) in errors" :key="index">
         {{ formatError(err) }}
       </li>
     </ul>
@@ -180,18 +168,11 @@ const isPasswordVisible = ref(false)
               cols="12"
               class="d-flex align-center"
             >
-              <VDivider />
-              <span class="mx-4">or</span>
-              <VDivider />
+              
             </VCol>
 
             <!-- auth providers -->
-            <VCol
-              cols="12"
-              class="text-center"
-            >
-              <AuthProvider />
-            </VCol>
+            
           </VRow>
         </VForm>
       </VCardText>

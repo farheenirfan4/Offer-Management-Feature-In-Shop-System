@@ -40,6 +40,7 @@ const newProject = {
       <AnalyticsAward />
     </VCol>
 
+
     <VCol
       cols="12"
       md="8"
@@ -47,7 +48,11 @@ const newProject = {
       <AnalyticsTransactions />
     </VCol>
 
-    <VCol
+    <VCol cols="12">
+      <AnalyticsUserTable />
+    </VCol>
+
+   <!--  <VCol
       cols="12"
       md="4"
     >
@@ -94,9 +99,7 @@ const newProject = {
           <AnalyticsBarCharts />
         </VCol>
       </VRow>
-    </VCol>
-    <VCol cols="12">
-      <AnalyticsUserTable />
-    </VCol>
+    </VCol>-->
+    
   </VRow>
 </template>

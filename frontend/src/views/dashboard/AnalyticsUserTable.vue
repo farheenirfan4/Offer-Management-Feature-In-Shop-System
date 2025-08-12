@@ -162,7 +162,8 @@ const headersWithActions = [
 
 
 <template>
-  <VCard>
+  <VCard class="pa-4">
+    <VCardTitle class="text-h4 font-weight-bold mb-4">CMS User Management</VCardTitle>
     <VDataTable
       :headers="headersWithActions"
       :items="mappedUserData"
@@ -185,22 +186,26 @@ const headersWithActions = [
 
     <!-- Add User Button -->
     <VCardActions>
-      <VBtn color="primary" @click="isAddDialogOpen = true">Add New User</VBtn>
+      <VBtn style="background-color: #8C57FF;" color="white" class="ms-2 mb-2" @click="isAddDialogOpen = true">Add New User</VBtn>
     </VCardActions>
 
     <!-- Add User Dialog -->
     <VDialog v-model="isAddDialogOpen" max-width="500px">
       <VCard>
-        <VCardTitle>Add User</VCardTitle>
+        <VCardTitle class="text-h4 font-weight-bold mb-4 ma-2">Add User</VCardTitle>
         <VCardText>
-          <VTextField v-model="newUser.username" label="Username" required />
+
+           <div class="d-flex flex-column gap-4">
+            <VTextField v-model="newUser.username" label="Username" required />
           <VTextField v-model="newUser.email" label="Email" required />
           <VTextField v-model="newUser.password" label="Password" type="password" required />
-          <VSelect v-model="newUser.roles" :items="['admin', 'editor', 'viewer', 'subscriber']" label="Role" multiple />
+          <VSelect v-model="newUser.roles" :items="['admin', 'editor', 'viewer']" label="Role" multiple />
+           </div>
+          
         </VCardText>
         <VCardActions>
           <VBtn @click="isAddDialogOpen = false">Cancel</VBtn>
-          <VBtn color="primary" @click="handleAddUser">Save</VBtn>
+          <VBtn style="background-color: #8C57FF;" color="white" @click="handleAddUser">Save</VBtn>
         </VCardActions>
       </VCard>
     </VDialog>
@@ -208,15 +213,20 @@ const headersWithActions = [
     <!-- Edit User Dialog -->
     <VDialog v-model="isEditDialogOpen" max-width="500px">
       <VCard>
-        <VCardTitle>Edit User</VCardTitle>
+        <VCardTitle class="text-h4 font-weight-bold mb-4 ma-2">Edit User</VCardTitle>
         <VCardText>
-          <VTextField v-model="editUser.username" label="Username" required />
+          <div class="d-flex flex-column gap-4">
+            <VTextField v-model="editUser.username" label="Username" required />
           <VTextField v-model="editUser.email" label="Email" required />
           <VSelect    v-model="editUser.roles" :items="['admin', 'editor', 'viewer']" label="Role" multiple />
+          </div>
+
+
+          
         </VCardText>
         <VCardActions>
           <VBtn @click="isEditDialogOpen = false">Cancel</VBtn>
-          <VBtn color="primary" @click="updateUser">Update</VBtn>
+          <VBtn style="background-color: #8C57FF;" color="white" @click="updateUser">Update</VBtn>
         </VCardActions>
       </VCard>
     </VDialog>
