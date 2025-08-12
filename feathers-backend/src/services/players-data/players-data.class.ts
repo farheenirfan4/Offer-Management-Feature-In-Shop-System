@@ -105,16 +105,10 @@ if (query?.$totalDeposit || query?.$Mmr) {
     if (query?.$Mmr) {
         const { min, max } = query.$Mmr;
         knexQuery = knexQuery
-            .where('p.collection', 'UserState')
-            .andWhere('p.key', 'UserStats')
-            .andWhereRaw(
-                `CAST(p.value -> 'UsersCurrencyStatsData' ->> 'CashDeposit' AS numeric) >= ?`, 
-                [min]
-            )
-            .andWhereRaw(
-                `CAST(p.value -> 'UsersCurrencyStatsData' ->> 'CashDeposit' AS numeric) <= ?`, 
-                [max]
-            );
+            .where('p.collection', 'Progress')
+            .andWhere('p.key', 'PlayerRatingData')
+            .andWhereRaw(`CAST(p.value ->> 'Mou' AS numeric) >= ?`, [min])
+.andWhereRaw(`CAST(p.value ->> 'Mou' AS numeric) <= ?`, [max]);
         delete query.$Mmr;
     }
 }

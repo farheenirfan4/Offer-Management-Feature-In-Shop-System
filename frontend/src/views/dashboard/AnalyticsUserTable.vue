@@ -7,11 +7,21 @@ import avatar5 from '@images/avatars/avatar-5.png'
 import avatar6 from '@images/avatars/avatar-6.png'
 import avatar7 from '@images/avatars/avatar-7.png'
 import avatar8 from '@images/avatars/avatar-8.png'
+import { useUserValidator } from '../../../composables/validators/useUserValidator';
 
-import { ref, onMounted, computed } from 'vue'
+import { ref, computed } from 'vue'
+
+// 1. Import everything you need from your useUser composable
+import {
+  userData,
+  fetchUsers,
+  createUser,
+  updateUser,
+  deleteUser
+} from '../../../composables/users/useUser';
 
 interface User {
-  id: number;
+  id: string; // The composable uses string IDs, so this should be string
   email: string;
   roles: string[];
   username: string;
@@ -22,76 +32,41 @@ const headers = [
   { title: 'Email', key: 'email' },
   { title: 'Role', key: 'roles' },
 ]
-
-const userData = ref<User[]>([]) 
-const getToken = () => localStorage.getItem('feathers-jwt')
-
+const { validateUserForm } = useUserValidator();
 // Snackbar state
 const snackbar = ref({ show: false, text: '', color: 'error' })
 const showMessage = (text: string, color: 'success' | 'error' = 'error') => {
   snackbar.value = { show: true, text, color }
 }
 
-const showError = async (res: Response) => {
-  try {
-    const errData = await res.json()
-    if (errData?.message?.includes('permissions')) {
-      showMessage('You don’t have permission to perform this action.')
-    } else if (errData?.message) {
-      showMessage(errData.message)
-    } else {
-      showMessage(`Unexpected error (${res.status})`)
-    }
-  } catch {
-    showMessage(`Unexpected error (${res.status})`)
-  }
-}
-
-const fetchUsers = async () => {
-  const token = getToken()
-  if (!token) return showMessage('No authentication token found.')
-
-  try {
-    const response = await fetch('http://localhost:3030/users', {
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
-    })
-    if (!response.ok) return await showError(response)
-    const data = await response.json()
-    userData.value = data.data
-  } catch {
-    showMessage('Failed to fetch users. Please try again later.')
-  }
-}
-onMounted(fetchUsers)
-
 const isAddDialogOpen = ref(false)
 const isEditDialogOpen = ref(false)
 const newUser = ref({ username: "", email: "", password: "", roles: [] as string[] })
-const editUser = ref<User>({ id: 0, email: '', roles:[], username: '' })
+const editUser = ref<User>({ id: '', email: '', roles: [], username: '' })
 
-const createUser = async (newUserData: { username: string; email: string; password: string; roles?: string[] }) => {
-  const token = getToken()
-  if (!token) return
-  try {
-    const res = await fetch("http://localhost:3030/users", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify(newUserData),
-    })
-    if (!res.ok) return await showError(res)
-    const data = await res.json()
-    userData.value.push(data)
-    showMessage('User created successfully!', 'success')
-  } catch {
-    showMessage('Failed to create user.')
-  }
-}
 
 const handleAddUser = async () => {
+
+  const { valid, errors } = validateUserForm({
+    id: '', // id is not yet created, but schema requires it — consider making it optional for create
+    username: newUser.value.username,
+    email: newUser.value.email,
+    roles: newUser.value.roles
+  });
+
+  if (!valid) {
+    showMessage(errors.map(e => e.message).join(', '));
+    return;
+  }
+  
+
   if (!newUser.value.username || !newUser.value.email || !newUser.value.password) {
     return showMessage('Please fill all required fields.')
   }
-  await createUser(newUser.value)
+  
+  // 3. Use the createUser function from the composable
+  await createUser(newUser.value);
+  
   isAddDialogOpen.value = false
   newUser.value = { username: "", email: "", password: "", roles: [] }
 }
@@ -101,61 +76,62 @@ const openEditDialog = (user: User) => {
   isEditDialogOpen.value = true
 }
 
-const updateUser = async () => {
-  if (!editUser.value) return
-  const token = getToken()
-  if (!token) return
+const handleUpdateUser = async () => {
+  const { valid, errors } = validateUserForm({
+    id: editUser.value.id,
+    username: editUser.value.username,
+    email: editUser.value.email,
+    roles: editUser.value.roles
+  });
 
-  try {
-    const { username, email, roles } = editUser.value;
-    const res = await fetch(`http://localhost:3030/users/${editUser.value.id}`, {
-      method: "PATCH",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ username, email, roles }),
-    })
-    if (!res.ok) return await showError(res)
-    const updatedUser = await res.json()
-    const idx = userData.value.findIndex(u => u.id === updatedUser.id)
-    if (idx !== -1) userData.value[idx] = updatedUser
-    isEditDialogOpen.value = false
-    showMessage('User updated successfully!', 'success')
-  } catch {
-    showMessage('Failed to update user.')
+  if (!valid) {
+    showMessage(errors.map(e => e.message).join(', '));
+    return;
   }
+  if (!editUser.value) return
+  
+  // 4. Use the updateUser function from the composable
+  const { id, username, email, roles } = editUser.value;
+  await updateUser(id, { username, email, roles });
+
+  
+  
+  isEditDialogOpen.value = false
 }
 
-const deleteUser = async (id: number) => {
+const handleDeleteUser = async (id: string) => {
   if (!confirm("Are you sure you want to delete this user?")) return
-  const token = getToken()
-  if (!token) return
 
-  try {
-    const res = await fetch(`http://localhost:3030/users/${id}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    if (!res.ok) return await showError(res)
-    userData.value = userData.value.filter(u => u.id !== id)
-    showMessage('User deleted successfully!', 'success')
-  } catch {
-    showMessage('Failed to delete user.')
-  }
+  // 5. Use the deleteUser function from the composable
+  await deleteUser(id)
+  
+  // Check for success
+  // if (error.value === null) {
+  //   showMessage('User deleted successfully!', 'success')
+  // }
 }
 
 // Avatars
 const avatars = [avatar1, avatar2, avatar3, avatar4, avatar5, avatar6, avatar7, avatar8]
 const mappedUserData = computed(() => {
+  // 6. userData is now from the composable
   if (!Array.isArray(userData.value)) return []
   return userData.value.map(user => ({
     ...user,
     avatar: avatars[Math.floor(Math.random() * avatars.length)],
   }))
 })
+
 const headersWithActions = [
   { title: 'Avatar', key: 'avatar', sortable: false },
   ...headers,
   { title: "Actions", key: "actions", sortable: false },
 ]
+
+onMounted( async () => {
+    await fetchUsers();
+  });
+
 </script>
 
 
@@ -180,7 +156,7 @@ const headersWithActions = [
       <!-- Actions -->
       <template #item.actions="{ item }">
         <VBtn icon="ri-edit-line" size="small" color="white" variant="flat" @click="openEditDialog(item)" />
-        <VBtn icon="ri-delete-bin-line" size="small" color="error" variant="flat" @click="deleteUser(item.id)" />
+        <VBtn icon="ri-delete-bin-line" size="small" color="error" variant="flat" @click="handleDeleteUser(item.id)" />
       </template>
     </VDataTable>
 
@@ -226,7 +202,7 @@ const headersWithActions = [
         </VCardText>
         <VCardActions>
           <VBtn @click="isEditDialogOpen = false">Cancel</VBtn>
-          <VBtn style="background-color: #8C57FF;" color="white" @click="updateUser">Update</VBtn>
+          <VBtn style="background-color: #8C57FF;" color="white" @click="handleUpdateUser">Update</VBtn>
         </VCardActions>
       </VCard>
     </VDialog>

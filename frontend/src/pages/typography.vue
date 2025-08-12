@@ -3,10 +3,19 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../../composables/Authentication/useAuth'
 import { useDisplayConfigService, DisplayConfig } from '../../composables/DisplayConfigure/useDisplayConfig'
+import { useDisplayConfigureValidator } from '../../composables/validators/useDisplayConfigureValidator'
 
 const router = useRouter()
 const { displayConfigs, loading, error, notAuthorized, fetchDisplayConfig, createDisplayConfig, updateDisplayConfig } = useDisplayConfigService()
 const { user, token } = useAuth()
+const { validateDisplayConfigureForm } = useDisplayConfigureValidator()
+
+const snackbar = ref({
+  show: false,
+  message: '',
+  color: 'error',
+  timeout: 4000
+})
 
 // Dialog + form state
 const dialogVisible = ref(false)
@@ -49,6 +58,27 @@ const resetForm = () => {
 }
 
 const submitForm = async () => {
+  const { valid, errors } = validateDisplayConfigureForm(formDisplayConfig.value)
+
+  if (!valid) {
+    // Format errors into a user-friendly message
+    const message = errors
+      .map(err => {
+        if (err.message) return err.message
+        if (err.instancePath && err.message)
+          return `${err.instancePath.replace('/', '')} ${err.message}`
+        return 'Validation error'
+      })
+      .join(', ')
+
+    snackbar.value = {
+      show: true,
+      message: message || 'Invalid form data',
+      color: 'error',
+      timeout: 6000
+    }
+    return
+  }
   let config: DisplayConfig | null = null
 
   if (isEditing.value && editingId.value !== null) {
@@ -149,6 +179,18 @@ onMounted(async () => {
       </VCard>
     </VDialog>
   </VContainer>
+  <VSnackbar
+  v-model="snackbar.show"
+  :timeout="snackbar.timeout"
+  :color="snackbar.color"
+  location="top"
+  elevation="6"
+>
+  {{ snackbar.message }}
+  <template #actions>
+    <VBtn color="white" @click="snackbar.show = false">Close</VBtn>
+  </template>
+</VSnackbar>
 </template>
 <style scoped>
 .square-btn {

@@ -1,13 +1,9 @@
 import { ref } from "vue"
-import Ajv from "ajv"
-import addFormats from "ajv-formats"
 import { offersSchema, Offer } from "../../schemas/offerSchema"
 import { useAuth } from "../Authentication/useAuth" // <-- get token from here
 
 // Setup AJV
-const ajv = new Ajv({ allErrors: true })
-addFormats(ajv)
-const validateOffer = ajv.compile(offersSchema)
+
 
 const API_URL = "http://localhost:3030/offers"
 
@@ -18,16 +14,7 @@ export function useOffers() {
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  // Helper to run validation before API calls
-  const validateBeforeSend = (data: Partial<Offer>) => {
-    const valid = validateOffer(data)
-    if (!valid) {
-      const messages = (validateOffer.errors || [])
-        .map(err => `${err.instancePath.replace("/", "") || err.params.missingProperty}: ${err.message}`)
-        .join(", ")
-      throw new Error(`Validation failed: ${messages}`)
-    }
-  }
+  
 
   const getHeaders = () => ({
     "Content-Type": "application/json",

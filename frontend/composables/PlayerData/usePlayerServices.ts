@@ -28,9 +28,8 @@ export const error = ref<string | null>(null);
 export const fetchFilteredUsers = async (personaId: number) => {
   await fetchPersonasConfig();
 
-  // Load a specific persona to populate the values
-  // You would likely get this ID dynamically, but we'll use '2' for the example
-  loadPersonaDetails(personaId);
+  
+  await loadPersonaDetails(personaId);
 
   const queryParams = new URLSearchParams();
 
@@ -40,7 +39,7 @@ export const fetchFilteredUsers = async (personaId: number) => {
   }
 
   // Condition for $levelRange
-  if (minLevel.value !== null && maxLevel.value !== null) {
+  if (minLevel.value !== null && maxLevel.value !== null && maxLevel.value !== 0) {
     queryParams.append('$levelRange[min]', minLevel.value.toString());
     queryParams.append('$levelRange[max]', maxLevel.value.toString());
   }

@@ -38,7 +38,7 @@ const fetchUsers = async () => {
     });
     if (!res.ok) throw new Error(await res.text());
     const data = await res.json();
-    userData.value = data;
+    userData.value = Array.isArray(data) ? data : data.data;
   } catch (err) {
     console.error('Failed to fetch users:', err);
     error.value = 'Unable to load users';
@@ -46,6 +46,8 @@ const fetchUsers = async () => {
     isLoading.value = false;
   }
 };
+
+
 
 // ✅ Create a new user
 const createUser = async (newUser: { username: string; email: string; password: string; roles?: string[] }) => {
@@ -95,9 +97,17 @@ const deleteUser = async (id: string) => {
 };
 
 // Optional: Role-based access check
-const canManageUsers = computed(() => user.value?.roles?.includes('admin'));
+export const canManageUsers = computed(() => user.value?.roles?.includes('admin'));
 
 // Auto-load users on mount
-onMounted(() => {
-  fetchUsers();
-});
+
+
+export {
+  userData,
+  isLoading,
+  error,
+  fetchUsers,
+  createUser,
+  updateUser,
+  deleteUser
+};

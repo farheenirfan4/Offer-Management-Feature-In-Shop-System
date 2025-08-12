@@ -3,10 +3,12 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../../composables/Authentication/useAuth'
 import { usePersonaService, PersonaConfig } from '../../composables/Persona/usePersonaService'
+import { usePersonaValidator } from '../../composables/validators/usePersonaValidator'
 
 const router = useRouter()
 const { personasConfig, loading, error, notAuthorized, fetchPersonasConfig, createPersona, updatePersona } = usePersonaService()
 const { user, token } = useAuth()
+const { validatePersonaForm } = usePersonaValidator()
 
 // Dialog + form state
 const dialogVisible = ref(false)
@@ -23,6 +25,13 @@ const formPersona = ref<Omit<PersonaConfig, 'id' | 'createdAt' | 'updatedAt'>>({
   maxDeposits: 0,
   minDeposits: 0
 })
+
+const validationErrors = ref<string[]>([])
+const snackbar = ref({ show: false, text: '', color: 'error' })
+
+function showSnackbar(message: string) {
+  snackbar.value = { show: true, text: message, color: 'error' }
+}
 
 const openCreateDialog = () => {
   resetForm()
@@ -61,6 +70,18 @@ const resetForm = () => {
 }
 
 const submitForm = async () => {
+  validationErrors.value = []
+
+  // Validate form data before submit
+  const { valid, errors } = validatePersonaForm(formPersona.value)
+  if (!valid) {
+    const errorMessages = (errors || []).map(e => e.message || "Invalid field").join(", ")
+    showSnackbar(errorMessages)
+    return // stop submission
+  }
+
+
+
   let persona: PersonaConfig | null = null
 
   if (isEditing.value && editingId.value !== null) {
@@ -175,6 +196,14 @@ onMounted(async () => {
         </VCardActions>
       </VCard>
     </VDialog>
+    <v-snackbar
+      v-model="snackbar.show"
+      :color="snackbar.color"
+      timeout="4000"
+      location="top right"
+    >
+      {{ snackbar.text }}
+    </v-snackbar>
   </VContainer>
 </template>
 <style scoped>

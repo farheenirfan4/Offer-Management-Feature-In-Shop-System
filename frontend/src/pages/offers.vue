@@ -1,3 +1,227 @@
+
+
+<script setup lang="ts">
+import { computed, ref, onMounted, onUnmounted  } from "vue";
+import { useOffers } from "../../composables/Offers/useOffer";
+import { Offer } from "../../schemas/offerSchema";
+import { fetchFilteredUsers, users as filteredUsers } from "../../composables/PlayerData/usePlayerServices"; 
+import { formatForDateTimeLocal, toUTCISOString } from "../utils/offerUtils";
+import { parseProductName, stringifyProductName } from "../utils/offerUtils";
+import { useAuth } from '../../composables/Authentication/useAuth';
+import { usePersonaService } from '../../composables/Persona/usePersonaService'
+import { useDisplayConfigService } from '../../composables/DisplayConfigure/useDisplayConfig'
+import { getOfferStatus } from '../../src/utils/offerUtils';
+import { useOfferValidator } from '../../composables/validators/useOfferValidator';
+import { VContainer } from "vuetify/components";
+const { validateOfferForm } = useOfferValidator();
+
+const { fetchDisplayConfig, getDisplayConfigIds } = useDisplayConfigService()
+// assuming fetchFilteredUsers is exported from your Persona composable
+
+const isUserDialogOpen = ref(false);
+const selectedPersonaId = ref<number | null>(null);
+const userDialogLoading = ref(false);
+
+const { user } = useAuth();
+
+
+const { offers, loading, error, fetchOffers, deleteOffer: removeOffer,addOffer,updateOffer } = useOffers();
+const newOffer= ref<Partial<Offer>>({
+  id:'',
+  title: '',
+  description: '',
+  price: '',
+  discountPercentage: '',
+  promotionalTags: '' as unknown as string[] | string,
+  product: '',
+  personasId : 0,
+  displayConfigureId : 0,
+  repeatPatterns : 'none',
+  repeatDetails : [],
+  startDateUTC : '',
+  endDateUTC : '',
+});
+const headers = [
+  { title: "Title", key: "title" },
+  { title: "Description", key: "description" },
+  { title: "Price", key: "price" },
+  { title: "Discount (%)", key: "discountPercentage" },
+  { title: "Tags", key: "promotionalTags" },
+  { title: "Product", key: "product" },
+  { title: "Persona Id", key: "personasId" },
+  { title: "Display Configure Id", key: "displayConfigureId" },
+  { title: "Repeat Patterns", key: "repeatPatterns" },
+  { title: "RepeatDetails", key: "repeatDetails" },
+  { title: "Start Date", key: "startDateUTC" },
+  { title: "End Date", key: "endDateUTC" },
+  { title: "Is Active", key: "status" },
+  { title: "Actions", key: "actions", sortable: false },
+
+
+];
+
+const isAddDialogOpen = ref(false);
+const editModel = ref(false)
+const editingOfferId = ref<string | null>(null)
+const { getPersonaIds, fetchPersonasConfig } = usePersonaService()
+const personaIds = ref<string[] | number[]>([])
+
+async function openUserDialog(personaId: number) {
+  selectedPersonaId.value = personaId;
+  isUserDialogOpen.value = true;
+  userDialogLoading.value = true;
+  
+  try {
+    await fetchFilteredUsers(personaId); 
+  } finally {
+    userDialogLoading.value = false;
+  }
+}
+
+
+const now = new Date();
+const minDateTime = ref(
+  new Date(now.getTime() - now.getTimezoneOffset() * 60000) // adjust to local time
+    .toISOString()
+    .slice(0, 16) // "YYYY-MM-DDTHH:mm"
+);
+
+// Delete offer action
+async function deleteOffer(item: any) {
+  if (confirm(`Are you sure you want to delete "${item.title}"?`)) {
+    await removeOffer(item._id || item.id);
+    await fetchOffers(); // <-- add this to refresh the list from the backend
+  }
+}
+
+const displayConfigIds = ref<number[]>([])
+
+const offersWithStatus = computed(() => {
+  // Use the offers ref to get the current list of offers
+  return offers.value.map(offer => {
+    return {
+      ...offer,
+      // Use the imported function to get the correct status
+      status: getOfferStatus(offer)
+    };
+  });
+});
+
+const repeatDetailsOptions = computed(() => {
+  const pattern = newOffer.value.repeatPatterns;
+  if (pattern === 'weekly') {
+    return ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+  }
+  if (pattern === 'monthly') {
+    return [
+      'january', 'february', 'march', 'april', 'may', 'june',
+      'july', 'august', 'september', 'october', 'november', 'december'
+    ];
+  }
+  return [];
+});
+
+onMounted(() => {
+  fetchOffers();
+});
+
+
+async function saveOffer() {
+  try {
+    if (newOffer.value.repeatPatterns === 'none' ) {
+      newOffer.value.repeatDetails = []
+    }
+
+   const offerToSave = {
+      ...newOffer.value,
+      createdBy: user.value?.username ,
+      updatedBy: user.value?.username ,
+      promotionalTags: typeof newOffer.value.promotionalTags === 'string'
+        ? newOffer.value.promotionalTags.split(',').map(t => t.trim()).filter(Boolean)
+        : newOffer.value.promotionalTags,
+      personasId: +(newOffer.value.personasId || 0),
+      displayConfigureId: +(newOffer.value.displayConfigureId || 0),
+      startDateUTC: toUTCISOString(newOffer.value.startDateUTC),
+      endDateUTC: toUTCISOString(newOffer.value.endDateUTC),
+      product: stringifyProductName(newOffer.value.product as string)
+    };
+
+
+
+    if (editModel.value && editingOfferId.value) {
+      // 🔹 Create a new object for the update payload
+      const dataToUpdate = { ...offerToSave };
+
+      // ❗ Remove the id and status fields from the payload
+      delete dataToUpdate.id;
+      delete (dataToUpdate as any).status;
+
+      await updateOffer(editingOfferId.value, dataToUpdate as Offer);
+      
+      alert("Offer updated successfully!");
+    } else {
+      // 🔹 Add offer
+      await addOffer(offerToSave)
+      alert("Offer added successfully!");
+    }
+
+    await fetchOffers();
+
+    // Reset form
+    isAddDialogOpen.value = false
+    editModel.value = false
+    editingOfferId.value = null
+
+  } catch (err) {
+    console.error("Failed to save offer:", err)
+  }
+}
+
+function editOffer(item: Offer & { _id?: string }) {
+  newOffer.value = {
+    ...item,
+    promotionalTags: Array.isArray(item.promotionalTags)
+      ? item.promotionalTags.join(", ")
+      : item.promotionalTags || '',
+    product: parseProductName(item.product), // ✅ Always just the name
+    startDateUTC: formatForDateTimeLocal(item.startDateUTC),
+    endDateUTC: formatForDateTimeLocal(item.endDateUTC),
+  };
+  editingOfferId.value = item._id || item.id || null;
+  editModel.value = true;
+  isAddDialogOpen.value = true;
+}
+
+onMounted(async () => {
+  await fetchPersonasConfig()
+  personaIds.value = getPersonaIds()
+  await fetchDisplayConfig()
+  displayConfigIds.value = getDisplayConfigIds()
+})
+
+let updateInterval: number | NodeJS.Timeout | undefined;
+
+onMounted(async () => {
+  // Fetch initial offers
+  await fetchOffers();
+
+  // Set up a timer to update the offers' status every minute
+  updateInterval = setInterval(() => {
+    // A simple way to trigger reactivity is to re-assign the offers list
+    offers.value = [...offers.value];
+  }, 50000); // 60000 milliseconds = 1 minute
+});
+
+onUnmounted(() => {
+  // Clear the timer to prevent memory leaks when the component is destroyed
+  if (updateInterval) {
+    clearInterval(updateInterval);
+  }
+});
+
+</script>
+
+
 <template>
   <div class="pa-4">
     <!-- Heading -->
@@ -11,9 +235,10 @@
       {{ error }}
     </v-alert>
 
-    <!-- Header with Add Button -->
-    <div class="d-flex justify-space-between align-center mb-4">
-      <h1 class="font-weight-bold mb-4">Offers</h1>
+
+    <VContainer style="background-color: white; border-radius: 10px;" >
+      <div class="d-flex justify-space-between align-center mb-4">
+      <h1 class="font-weight-bold mb-2">Offers</h1>
       <v-btn
   color="primary"
   density="compact"
@@ -101,22 +326,6 @@
     {{ new Date(item.endDateUTC).toLocaleString() }}
   </v-chip>
 </template>
-
-<!--<template #item.status="{ item }">
-    <v-chip
-      size="small"
-      :color="
-        item.status === 'active'
-          ? 'success'
-          : item.status === 'upcoming'
-          ? 'warning'
-          : 'error'
-      "
-      label
-    >
-      {{ item.status }}
-    </v-chip>
-  </template>-->
     </v-data-table>
 
     <!-- Empty State -->
@@ -128,6 +337,10 @@
     >
       No offers found.
     </v-alert>
+
+    </VContainer>
+    <!-- Header with Add Button -->
+    
 
     <v-dialog v-model="isAddDialogOpen" max-width="600" persistent>
   <v-card>
@@ -265,10 +478,10 @@
 
 <v-dialog v-model="isUserDialogOpen" max-width="800">
   <v-card>
-    <v-card-title class="text-h5">
+    <v-card-title class="text-h4 font-weight-bold mb-2 ma-2">
   Users for Persona ID: {{ selectedPersonaId }}
 </v-card-title>
-<v-card-subtitle v-if="!userDialogLoading" class="mb-2" style="color: black;">
+<v-card-subtitle v-if="!userDialogLoading" class="ma-2 mb-2 font-weight-bold" style="color: black;">
   Total Users: {{ filteredUsers.length }}
 </v-card-subtitle>
     
@@ -303,242 +516,6 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted  } from "vue";
-import { useOffers } from "../../composables/Offers/useOffer";
-import { Offer } from "../../schemas/offerSchema";
-import { fetchFilteredUsers, users as filteredUsers } from "../../composables/PlayerData/usePlayerServices"; 
-import { formatForDateTimeLocal, toUTCISOString } from "../utils/offerUtils";
-import { parseProductName, stringifyProductName } from "../utils/offerUtils";
-import { useAuth } from '../../composables/Authentication/useAuth';
-import { usePersonaService } from '../../composables/Persona/usePersonaService'
-import { useDisplayConfigService } from '../../composables/DisplayConfigure/useDisplayConfig'
-import { getOfferStatus } from '../../src/utils/offerUtils';
-
-const { fetchDisplayConfig, getDisplayConfigIds } = useDisplayConfigService()
-// assuming fetchFilteredUsers is exported from your Persona composable
-
-const isUserDialogOpen = ref(false);
-const selectedPersonaId = ref<number | null>(null);
-const userDialogLoading = ref(false);
-
-const { user } = useAuth();
-
-
-const { offers, loading, error, fetchOffers, deleteOffer: removeOffer,addOffer,updateOffer } = useOffers();
-const newOffer= ref<Partial<Offer>>({
-  id:'',
-  title: '',
-  description: '',
-  price: '',
-  discountPercentage: '',
-  promotionalTags: '' as unknown as string[] | string,
-  product: '',
-  personasId : 0,
-  displayConfigureId : 0,
-  repeatPatterns : 'none',
-  repeatDetails : [],
-  startDateUTC : '',
-  endDateUTC : '',
-});
-const headers = [
-  { title: "Title", key: "title" },
-  { title: "Description", key: "description" },
-  { title: "Price", key: "price" },
-  { title: "Discount (%)", key: "discountPercentage" },
-  { title: "Tags", key: "promotionalTags" },
-  { title: "Product", key: "product" },
-  { title: "Persona Id", key: "personasId" },
-  { title: "Display Configure Id", key: "displayConfigureId" },
-  { title: "Repeat Patterns", key: "repeatPatterns" },
-  { title: "RepeatDetails", key: "repeatDetails" },
-  { title: "Start Date", key: "startDateUTC" },
-  { title: "End Date", key: "endDateUTC" },
-  { title: "Is Active", key: "status" },
-  { title: "Actions", key: "actions", sortable: false },
-
-
-];
-
-const isAddDialogOpen = ref(false);
-const editModel = ref(false)
-const editingOfferId = ref<string | null>(null)
-
-async function openUserDialog(personaId: number) {
-  selectedPersonaId.value = personaId;
-  isUserDialogOpen.value = true;
-  userDialogLoading.value = true;
-  
-  try {
-    await fetchFilteredUsers(personaId); 
-  } finally {
-    userDialogLoading.value = false;
-  }
-}
-
-
-const now = new Date();
-const minDateTime = ref(
-  new Date(now.getTime() - now.getTimezoneOffset() * 60000) // adjust to local time
-    .toISOString()
-    .slice(0, 16) // "YYYY-MM-DDTHH:mm"
-);
-
-// Delete offer action
-async function deleteOffer(item: any) {
-  if (confirm(`Are you sure you want to delete "${item.title}"?`)) {
-    await removeOffer(item._id || item.id);
-    await fetchOffers(); // <-- add this to refresh the list from the backend
-  }
-}
-
-const displayConfigIds = ref<number[]>([])
-
-const offersWithStatus = computed(() => {
-  // Use the offers ref to get the current list of offers
-  return offers.value.map(offer => {
-    return {
-      ...offer,
-      // Use the imported function to get the correct status
-      status: getOfferStatus(offer)
-    };
-  });
-});
-
-const repeatDetailsOptions = computed(() => {
-  const pattern = newOffer.value.repeatPatterns;
-  if (pattern === 'weekly') {
-    return ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-  }
-  if (pattern === 'monthly') {
-    return [
-      'january', 'february', 'march', 'april', 'may', 'june',
-      'july', 'august', 'september', 'october', 'november', 'december'
-    ];
-  }
-  return [];
-});
-
-onMounted(() => {
-  fetchOffers();
-});
-
-
-async function saveOffer() {
-  try {
-    if (newOffer.value.repeatPatterns === 'none' ) {
-      newOffer.value.repeatDetails = []
-    }
-
-   const offerToSave = {
-      ...newOffer.value,
-      createdBy: user.value?.username || 'unknown',
-      updatedBy: user.value?.username || 'unknown',
-      promotionalTags: typeof newOffer.value.promotionalTags === 'string'
-        ? newOffer.value.promotionalTags.split(',').map(t => t.trim()).filter(Boolean)
-        : newOffer.value.promotionalTags,
-      personasId: +(newOffer.value.personasId || 0),
-      displayConfigureId: +(newOffer.value.displayConfigureId || 0),
-      startDateUTC: toUTCISOString(newOffer.value.startDateUTC),
-      endDateUTC: toUTCISOString(newOffer.value.endDateUTC),
-      product: stringifyProductName(newOffer.value.product as string)
-    };
-
-    if (editModel.value && editingOfferId.value) {
-      // 🔹 Create a new object for the update payload
-      const dataToUpdate = { ...offerToSave };
-
-      // ❗ Remove the id and status fields from the payload
-      delete dataToUpdate.id;
-      delete (dataToUpdate as any).status;
-
-      await updateOffer(editingOfferId.value, dataToUpdate as Offer);
-      
-      alert("Offer updated successfully!");
-    } else {
-      // 🔹 Add offer
-      await addOffer(offerToSave)
-      alert("Offer added successfully!");
-    }
-
-    await fetchOffers();
-
-    // Reset form
-    isAddDialogOpen.value = false
-    editModel.value = false
-    editingOfferId.value = null
-
-  } catch (err) {
-    console.error("Failed to save offer:", err)
-  }
-}
-
-
-
-
-function getStatusColor(status: string): string {
-  switch (status.toLowerCase()) {
-    case 'active':
-      return 'green';
-    case 'upcoming':
-      return 'yellow';
-    case 'expired':
-      return 'red';
-    default:
-      return 'grey'; // Default color for unknown status
-  }
-}
-
-function editOffer(item: Offer & { _id?: string }) {
-  newOffer.value = {
-    ...item,
-    promotionalTags: Array.isArray(item.promotionalTags)
-      ? item.promotionalTags.join(", ")
-      : item.promotionalTags || '',
-    product: parseProductName(item.product), // ✅ Always just the name
-    startDateUTC: formatForDateTimeLocal(item.startDateUTC),
-    endDateUTC: formatForDateTimeLocal(item.endDateUTC),
-  };
-  editingOfferId.value = item._id || item.id || null;
-  editModel.value = true;
-  isAddDialogOpen.value = true;
-}
-
-
-const { getPersonaIds, fetchPersonasConfig } = usePersonaService()
-const personaIds = ref<string[] | number[]>([])
-
-onMounted(async () => {
-  await fetchPersonasConfig()
-  personaIds.value = getPersonaIds()
-  await fetchDisplayConfig()
-  displayConfigIds.value = getDisplayConfigIds()
-})
-
-let updateInterval: number | NodeJS.Timeout | undefined;
-
-onMounted(async () => {
-  // Fetch initial offers
-  await fetchOffers();
-
-  // Set up a timer to update the offers' status every minute
-  updateInterval = setInterval(() => {
-    // A simple way to trigger reactivity is to re-assign the offers list
-    offers.value = [...offers.value];
-  }, 50000); // 60000 milliseconds = 1 minute
-});
-
-onUnmounted(() => {
-  // Clear the timer to prevent memory leaks when the component is destroyed
-  if (updateInterval) {
-    clearInterval(updateInterval);
-  }
-});
-
-
-
-</script>
-
 <style scoped>
 .custom-header th {
   background-color: #1976d2 !important;
@@ -552,3 +529,6 @@ onUnmounted(() => {
   padding: 12px;
 }
 </style>
+
+
+
