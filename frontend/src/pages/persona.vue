@@ -87,8 +87,8 @@ onMounted(async () => {
   <VContainer>
     <VCard>
       <VCardTitle class="d-flex justify-space-between align-center">
-        <span>Personas Configuration</span>
-        <VBtn icon="ri-add-box-line" color="primary" @click="openCreateDialog" />
+        <span class="text-h4 font-weight-bold mb-4 ma-2">Personas Configuration</span>
+        <VBtn class="square-btn"  icon="ri-add-line" color="primary" @click="openCreateDialog" />
       </VCardTitle>
 
       <VCardText>
@@ -121,7 +121,7 @@ onMounted(async () => {
               <td>{{ item.minDeposits }} - {{ item.maxDeposits }}</td>
               <td>{{ new Date(item.createdAt).toLocaleString() }}</td>
               <td>
-                <VBtn small icon="ri-edit-line" @click="openEditDialog(item)" />
+                <VBtn small icon="ri-edit-line" variant="flat" color="purple" @click="openEditDialog(item)" />
               </td>
             </tr>
           </tbody>
@@ -132,11 +132,11 @@ onMounted(async () => {
     <!-- Unified Create/Edit Persona Dialog -->
     <VDialog v-model="dialogVisible" max-width="600px">
       <VCard>
-        <VCardTitle>{{ isEditing ? 'Edit Persona' : 'Create New Persona' }}</VCardTitle>
+        <VCardTitle class="text-h4 font-weight-bold mb-4 ma-2"> {{ isEditing ? 'Edit Persona' : 'Create New Persona' }}</VCardTitle>
         <VCardText>
-          <VTextField label="Name" v-model="formPersona.name" outlined />
+          <VTextField class="mb-4" label="Name" v-model="formPersona.name" outlined />
 
-          <VSwitch label="For Paying Users" v-model="formPersona.forPayingUsers" />
+          <VSwitch class="mb-4" label="For Paying Users" v-model="formPersona.forPayingUsers" />
 
           <VRow>
             <VCol cols="6">
@@ -169,7 +169,7 @@ onMounted(async () => {
         <VCardActions>
           <VSpacer />
           <VBtn @click="dialogVisible = false">Cancel</VBtn>
-          <VBtn color="primary" @click="submitForm">
+          <VBtn style="background-color: #8C57FF;" color="white" @click="submitForm">
             {{ isEditing ? 'Update' : 'Save' }}
           </VBtn>
         </VCardActions>
@@ -177,3 +177,16 @@ onMounted(async () => {
     </VDialog>
   </VContainer>
 </template>
+<style scoped>
+.square-btn {
+  border-radius: 8px; /* Slightly rounded corners, not fully round */
+  width: 48px;        /* Square size */
+  height: 48px;       /* Square size */
+  min-width: 36px;    /* Ensure Vuetify doesn't override width */
+  min-height: 36px;   /* Ensure Vuetify doesn't override height */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+}
+</style>

@@ -124,20 +124,25 @@ onMounted(async () => {
     <!-- Create/Edit Dialog -->
     <VDialog v-model="dialogVisible" max-width="600px">
       <VCard>
-        <VCardTitle>{{ isEditing ? 'Edit Display Config' : 'Create New Display Config' }}</VCardTitle>
+        <VCardTitle class="text-h4 font-weight-bold mb-4 ma-2"> {{ isEditing ? 'Edit Display Config' : 'Create New Display Config' }}</VCardTitle>
         <VCardText>
           <div class="d-flex flex-column gap-4">
   <VTextField label="Display Section" v-model="formDisplayConfig.displaySection" outlined />
   <VTextField label="Height" v-model="formDisplayConfig.height" outlined />
   <VTextField label="Width" v-model="formDisplayConfig.width" outlined />
-  <VTextField label="Priority" v-model="formDisplayConfig.priority" outlined />
+  <VSelect
+  label="Priority"
+  v-model="formDisplayConfig.priority"
+  :items="['High', 'Moderate', 'Low']"
+  outlined
+/>
 </div>
         </VCardText>
 
         <VCardActions>
           <VSpacer />
           <VBtn @click="dialogVisible = false">Cancel</VBtn>
-          <VBtn color="primary" @click="submitForm">
+          <VBtn  style="background-color: #8C57FF;" color="white" @click="submitForm">
             {{ isEditing ? 'Update' : 'Save' }}
           </VBtn>
         </VCardActions>
@@ -155,5 +160,6 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 5px;
 }
 </style>

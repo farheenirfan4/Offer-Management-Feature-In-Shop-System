@@ -6,6 +6,7 @@ import type { HookContext } from '../../declarations'
 import { dataValidator, queryValidator } from '../../validators'
 import type { OffersService } from './offers.class'
 import { format } from 'path'
+import { Type } from '@feathersjs/typebox'
 
 // Main data model schema
 export const offersSchema = {
@@ -102,7 +103,8 @@ export const offersQuerySchema = {
   type: 'object',
   additionalProperties: false,
   properties: {
-    ...querySyntax(offersSchema.properties)
+    ...querySyntax(offersSchema.properties),
+    $offersPerDay: Type.Optional(Type.Boolean()),
   }
 } as const
 export type OffersQuery = FromSchema<typeof offersQuerySchema>

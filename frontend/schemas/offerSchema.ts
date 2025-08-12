@@ -1,7 +1,6 @@
 import Ajv from "ajv"
 
 export interface Offer {
-  //[x: string]: any
   id: string
   title: string
   description: string
@@ -13,13 +12,8 @@ export interface Offer {
   displayConfigureId: number
   repeatPatterns: "none" | "daily" | "weekly" | "monthly"
   repeatDetails: string[]
-  //createdBy: string
-  //updatedBy: string
-  //isDeleted?: boolean
   startDateUTC: string 
-  endDateUTC: string 
- // createdAt: string
-  //updatedAt: string
+  endDateUTC: string
 }
 
 export const offersSchema = {

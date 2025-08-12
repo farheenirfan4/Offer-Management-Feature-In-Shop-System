@@ -23,7 +23,7 @@ import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
   <!-- 👉 Apps & Pages -->
   <VerticalNavSectionTitle
     :item="{
-      heading: 'Apps & Pages',
+      heading: 'Offers',
     }"
   />
 
@@ -35,20 +35,13 @@ import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
     }"
   />
 
-  <VerticalNavLink
+  <!--  ><VerticalNavLink
     :item="{
       title: 'Login',
       icon: 'ri-login-box-line',
       to: '/login',
     }"
-  />
-  <VerticalNavLink
-    :item="{
-      title: 'Register',
-      icon: 'ri-user-add-line',
-      to: '/register',
-    }"
-  />
+  />-->
   <VerticalNavLink
     :item="{
       title: 'Persona',
@@ -73,27 +66,27 @@ import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
   />
   <VerticalNavLink
     :item="{
-      title: 'Typography',
-      icon: 'ri-text',
+      title: 'Display Configure',
+      icon: 'ri-computer-line',
       to: '/typography',
     }"
   />
-  <VerticalNavLink
+  <!-- ><VerticalNavLink
     :item="{
       title: 'Icons',
       icon: 'ri-remixicon-line',
       to: '/icons',
     }"
-  />
-  <VerticalNavLink
+  />-->
+  <!-- ><VerticalNavLink
     :item="{
       title: 'Cards',
       icon: 'ri-bar-chart-box-line',
       to: '/cards',
     }"
-  />
+  />-->
 
-  <!-- 👉 Forms & Tables -->
+  <!-- 👉 Forms & Tables 
   <VerticalNavSectionTitle
     :item="{
       heading: 'Forms & Tables',
@@ -113,9 +106,9 @@ import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
       icon: 'ri-table-alt-line',
       to: '/tables',
     }"
-  />
+  />-->
 
-  <!-- 👉 Others -->
+  <!-- 👉 Others 
   <VerticalNavSectionTitle
     :item="{
       heading: 'Others',
@@ -136,5 +129,5 @@ import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
       icon: 'ri-lifebuoy-line',
       target: '_blank',
     }"
-  />
+  />-->
 </template>
